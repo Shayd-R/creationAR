@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AR con MindAR - Contenido Multimedia</title>
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+    <script>
+      // Componente para el carrusel de imágenes
+      AFRAME.registerComponent('carousel', {
+        schema: {
+          images: {type: 'array', default: []},
+          interval: {type: 'number', default: 3000}
+        },
+        init: function() {
+          this.index = 0;
+          if (this.data.images.length > 0) {
+            this.startCarousel();
+          }
+        },
+        startCarousel: function() {
+          this.setImage();
+          this.intervalId = setInterval(() => {
+            this.index = (this.index + 1) % this.data.images.length;
+            this.setImage();
+          }, this.data.interval);
+        },
+        setImage: function() {
+          this.el.setAttribute('src', this.data.images[this.index]);
+        },
+        pause: function() {
+          if (this.intervalId) {
+            clearInterval(this.intervalId);
+          }
+        },
+        remove: function() {
+          if (this.intervalId) {
+            clearInterval(this.intervalId);
+          }
+        }
+      });
+
+      document.addEventListener("DOMContentLoaded", function() {
+        const sceneEl = document.querySelector('a-scene');
+        let arSystem;
+        sceneEl.addEventListener('loaded', function () {
+          arSystem = sceneEl.systems["mindar-image-system"];
+        });
+        const exampleTarget = document.querySelector('#example-target');
+        
+        // Botones de control AR
+        const startButton = document.querySelector("#example-start-button");
+        const stopButton = document.querySelector("#example-stop-button");
+        const pauseButton = document.querySelector("#example-pause-button");
+        const pauseKeepVideoButton = document.querySelector("#example-pause-keep-video-button");
+        const unpauseButton = document.querySelector("#example-unpause-button");
+        
+        // Botones de contenido multimedia
+        const videoButton = document.querySelector("#video-button");
+        const carouselButton = document.querySelector("#carousel-button");
+        const textoButton = document.querySelector("#texto-button");
+        const infoButton = document.querySelector("#info-button");
+        
+        // Control AR
+        startButton.addEventListener('click', () => {
+          console.log("start");
+          arSystem.start(); // iniciar AR 
+        });
+        stopButton.addEventListener('click', () => {
+          console.log("stop");
+          arSystem.stop(); // detener AR 
+        });
+        pauseButton.addEventListener('click', () => {
+          console.log("pause");
+          arSystem.pause(); // pausar AR, pausar video
+        });
+        pauseKeepVideoButton.addEventListener('click', () => {
+          console.log("pause keep video");
+          arSystem.pause(true); // pausar AR, mantener video
+        });
+        unpauseButton.addEventListener('click', () => {
+          console.log("unpause");
+          arSystem.unpause(); // reanudar AR y video
+        });
+        
+        // Funciones para mostrar contenido multimedia
+        function hideAllContent() {
+          document.querySelectorAll('.content-panel').forEach(panel => {
+            panel.setAttribute('visible', false);
+          });
+        }
+        
+        // Eventos de botones multimedia
+        videoButton.addEventListener('click', () => {
+          hideAllContent();
+          document.querySelector('#video-panel').setAttribute('visible', true);
+          const videoEl = document.querySelector('#video-asset');
+          if (videoEl) {
+            videoEl.play();
+          }
+        });
+        
+        carouselButton.addEventListener('click', () => {
+          hideAllContent();
+          document.querySelector('#carousel-panel').setAttribute('visible', true);
+        });
+        
+        textoButton.addEventListener('click', () => {
+          hideAllContent();
+          document.querySelector('#text-panel').setAttribute('visible', true);
+        });
+        
+        infoButton.addEventListener('click', () => {
+          hideAllContent();
+          document.querySelector('#info-panel').setAttribute('visible', true);
+        });
+        
+        // evento arReady se activa cuando está listo
+        sceneEl.addEventListener("arReady", (event) => {
+          console.log("MindAR está listo");
+          document.querySelector('#content-buttons').style.display = 'flex';
+        });
+        
+        // evento arError se activa cuando algo sale mal. Principalmente problemas de compatibilidad con el navegador
+        sceneEl.addEventListener("arError", (event) => {
+          console.log("MindAR no pudo iniciarse");
+          document.querySelector('#content-buttons').style.display = 'none';
+        });
+        
+        // detectar cuando se encuentra el objetivo
+        exampleTarget.addEventListener("targetFound", event => {
+          console.log("objetivo encontrado");
+          document.querySelector('#content-buttons').style.display = 'flex';
+          // Ocultar todos los paneles de contenido al inicio
+          hideAllContent();
+        });
+        
+        // detectar cuando se pierde el objetivo
+        exampleTarget.addEventListener("targetLost", event => {
+          console.log("objetivo perdido");
+          hideAllContent();
+        });
+      });
+    </script>
+    <style>
+      #control-panel {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        z-index: 1000;
+        background-color: rgba(255, 255, 255, 0.7);
+        padding: 10px;
+        border-radius: 5px;
+      }
+      #control-panel button {
+        margin: 5px;
+        padding: 8px;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      #control-panel button:hover {
+        background-color: #45a049;
+      }
+      
+      #content-buttons {
+        position: absolute;
+        bottom: 20px;
+        left: 0;
+        right: 0;
+        display: none;
+        justify-content: center;
+        z-index: 1000;
+      }
+      
+      .content-button {
+        margin: 5px;
+        padding: 12px 20px;
+        font-size: 16px;
+        border: none;
+        border-radius: 30px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+      
+      #video-button {
+        background-color: #4285f4;
+        color: white;
+      }
+      
+      #carousel-button {
+        background-color: #0F9D58;
+        color: white;
+      }
+      
+      #texto-button {
+        background-color: #F4B400;
+        color: white;
+      }
+      
+      #info-button {
+        background-color: #db4437;
+        color: white;
+      }
+      
+      .content-button:hover {
+        transform: scale(1.05);
+        box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
+      }
+    </style>
+</head>
+<body>
+    <!-- Panel de control AR -->
+    <div id="control-panel">
+      <button id="example-start-button">Iniciar</button>
+      <button id="example-pause-button">Pausar</button>
+      <button id="example-pause-keep-video-button">Pausar (mantener video)</button>
+      <button id="example-unpause-button">Reanudar</button>
+      <button id="example-stop-button">Detener</button>
+    </div>
+    
+    <!-- Botones de contenido multimedia (fuera del AR) -->
+    <div id="content-buttons">
+      <button id="video-button" class="content-button">Video</button>
+      <button id="carousel-button" class="content-button">Imágenes</button>
+      <button id="texto-button" class="content-button">Texto</button>
+      <button id="info-button" class="content-button">Info</button>
+    </div>
+
+    <a-scene mindar-image="imageTargetSrc: targets.mind; autoStart: false;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+      <a-assets>
+        <img id="card" src="image.jpeg" />
+        <!-- Imágenes para el carrusel -->
+        <img id="img1" src="https://picsum.photos/300/200?random=1" />
+        <img id="img2" src="https://picsum.photos/300/200?random=2" />
+        <img id="img3" src="https://picsum.photos/300/200?random=3" />
+        <!-- Video -->
+        <video id="video-asset" src="https://cdn.aframe.io/videos/bunny.mp4" preload="auto" loop></video>
+      </a-assets>
+
+      <a-camera position="0 0 0" look-controls="enabled: false" cursor="fuse: false; rayOrigin: mouse;" raycaster="near: 10; far: 10000; objects: .clickable"></a-camera>
+
+      <a-entity id="example-target" mindar-image-target="targetIndex: 0">
+        <!-- Plano base para el marcador -->
+        <a-plane color="blue" opacity="0.7" position="0 0 0" height="0.552" width="1" rotation="0 0 0"></a-plane>
+        
+        <!-- Título de la experiencia AR -->
+        <a-text value="REALIDAD AUMENTADA" position="0 0.3 0.01" align="center" color="#FFFFFF" scale="0.5 0.5 0.5"></a-text>
+        
+        <!-- Panel de contenido para Video -->
+        <a-entity id="video-panel" class="content-panel" position="0 0 0.1" visible="false">
+          <a-video src="#video-asset" width="1" height="0.552" position="0 0 0"></a-video>
+        </a-entity>
+        
+        <!-- Panel de contenido para Carrusel -->
+        <a-entity id="carousel-panel" class="content-panel" position="0 0 0.1" visible="false">
+          <a-plane
+            carousel="images: #img1, #img2, #img3; interval: 3000"
+            width="1" 
+            height="0.552" 
+            position="0 0 0">
+          </a-plane>
+        </a-entity>
+        
+        <!-- Panel de contenido para Texto -->
+        <a-entity id="text-panel" class="content-panel" position="0 0 0.1" visible="false">
+          <a-plane color="#222222" width="1" height="0.552" position="0 0 0"></a-plane>
+          <a-text value="CONTENIDO DE TEXTO" position="0 0.15 0.01" align="center" color="#FFFFFF" scale="0.3 0.3 0.3"></a-text>
+          <a-text value="Esta es una demostración de texto en AR. Puedes mostrar información detallada sobre cualquier tema que desees presentar a tus usuarios." 
+                  position="0 0 0.01" 
+                  align="center" 
+                  color="#FFFFFF" 
+                  scale="0.12 0.12 0.12" 
+                  width="6"
+                  wrap-count="40"></a-text>
+        </a-entity>
+        
+        <!-- Panel de contenido para Info -->
+        <a-entity id="info-panel" class="content-panel" position="0 0 0.1" visible="false">
+          <a-plane color="#442244" width="1" height="0.552" position="0 0 0"></a-plane>
+          <a-text value="INFORMACIÓN" position="0 0.15 0.01" align="center" color="#FFFFFF" scale="0.3 0.3 0.3"></a-text>
+          <a-text value="Producto: AR Demo" position="-0.35 0.05 0.01" align="left" color="#FFFFFF" scale="0.12 0.12 0.12"></a-text>
+          <a-text value="Versión: 1.0" position="-0.35 -0.05 0.01" align="left" color="#FFFFFF" scale="0.12 0.12 0.12"></a-text>
+          <a-text value="Fecha: 2023" position="-0.35 -0.15 0.01" align="left" color="#FFFFFF" scale="0.12 0.12 0.12"></a-text>
+        </a-entity>
+      </a-entity>
+    </a-scene>
+</body>
+</html>
